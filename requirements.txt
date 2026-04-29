@@ -1,0 +1,6 @@
+multiversity
+pandas
+torch
+transformers
+accelerate
+pillow
