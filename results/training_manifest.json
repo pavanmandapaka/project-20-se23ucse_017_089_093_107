@@ -1,0 +1,12 @@
+{
+  "model_name": "Salesforce/blip-image-captioning-base",
+  "smoke_test_samples": 10,
+  "epochs": 2,
+  "batch_size": 1,
+  "gradient_accum": 4,
+  "learning_rate": 5e-05,
+  "max_text_len": 64,
+  "seed": 42,
+  "checkpoint_dir": "checkpoints/smoke_test_checkpoint",
+  "status": "smoke_test_passed"
+}
