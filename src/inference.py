@@ -4,6 +4,8 @@ import torch
 from transformers import BlipProcessor, BlipForConditionalGeneration
 from PIL import Image
 
+from database import log_inference
+
 def main():
     # 1. Setup Directories
     base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
