@@ -1,0 +1,79 @@
+{
+  "model_name": "./models/blip/models--Salesforce--blip-image-captioning-base/snapshots/82a37760796d32b1411fe092ab5d4e227313294b",
+  "total_samples": 1703,
+  "num_epochs": 10,
+  "epochs_completed": 10,
+  "batch_size": 1,
+  "gradient_accum": 8,
+  "effective_batch": 8,
+  "learning_rate": 2e-05,
+  "max_text_len": 128,
+  "seed": 42,
+  "best_epoch": 10,
+  "best_avg_loss": 2.01231,
+  "checkpoint_root": "checkpoints/full_train",
+  "loss_csv": "logs/full_train_loss.csv",
+  "epoch_summaries": [
+    {
+      "epoch": 1,
+      "avg_loss": 8.381979,
+      "duration_s": 318.8,
+      "global_step": 213
+    },
+    {
+      "epoch": 2,
+      "avg_loss": 4.688647,
+      "duration_s": 318.0,
+      "global_step": 426
+    },
+    {
+      "epoch": 3,
+      "avg_loss": 3.300335,
+      "duration_s": 318.3,
+      "global_step": 639
+    },
+    {
+      "epoch": 4,
+      "avg_loss": 2.441505,
+      "duration_s": 317.9,
+      "global_step": 852
+    },
+    {
+      "epoch": 5,
+      "avg_loss": 2.075148,
+      "duration_s": 318.5,
+      "global_step": 1065
+    },
+    {
+      "epoch": 6,
+      "avg_loss": 2.033385,
+      "duration_s": 318.0,
+      "global_step": 1278
+    },
+    {
+      "epoch": 7,
+      "avg_loss": 2.018192,
+      "duration_s": 318.3,
+      "global_step": 1491
+    },
+    {
+      "epoch": 8,
+      "avg_loss": 2.013547,
+      "duration_s": 317.9,
+      "global_step": 1704
+    },
+    {
+      "epoch": 9,
+      "avg_loss": 2.01241,
+      "duration_s": 318.1,
+      "global_step": 1917
+    },
+    {
+      "epoch": 10,
+      "avg_loss": 2.01231,
+      "duration_s": 317.8,
+      "global_step": 2130
+    }
+  ],
+  "status": "completed"
+}
