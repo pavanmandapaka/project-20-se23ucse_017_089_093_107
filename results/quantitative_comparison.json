@@ -1,0 +1,58 @@
+{
+  "zero_shot": {
+    "bleu_1": 0.034989,
+    "bleu_2": 0.010413,
+    "bleu_3": 0.006062,
+    "bleu_4": 0.004803,
+    "bleu_avg": 0.009963,
+    "rouge_1_p": 0.156939,
+    "rouge_1_r": 0.070083,
+    "rouge_1_f": 0.087776,
+    "rouge_2_p": 0.01906,
+    "rouge_2_r": 0.0052,
+    "rouge_2_f": 0.007334,
+    "rouge_l_p": 0.129424,
+    "rouge_l_r": 0.05724,
+    "rouge_l_f": 0.071628,
+    "model_version": "zero_shot",
+    "n_samples": 1703,
+    "evaluated_at": "2026-05-31 13:56:24"
+  },
+  "fine_tuned": {
+    "model_version": "fine_tuned",
+    "n_samples": "pending",
+    "note": "To be computed after fine-tuned inference (May 11)"
+  },
+  "comparison_table": {
+    "metrics": [
+      "BLEU-1",
+      "BLEU-2",
+      "BLEU-3",
+      "BLEU-4",
+      "BLEU-avg",
+      "ROUGE-1 F",
+      "ROUGE-2 F",
+      "ROUGE-L F"
+    ],
+    "zero_shot": [
+      0.034989,
+      0.010413,
+      0.006062,
+      0.004803,
+      0.009963,
+      0.087776,
+      0.007334,
+      0.071628
+    ],
+    "fine_tuned": [
+      "TBD",
+      "TBD",
+      "TBD",
+      "TBD",
+      "TBD",
+      "TBD",
+      "TBD",
+      "TBD"
+    ]
+  }
+}
