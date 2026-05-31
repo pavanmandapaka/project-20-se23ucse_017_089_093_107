@@ -1,0 +1,9 @@
+{
+  "checkpoint_used": "checkpoints/full_train/epoch_10/model.safetensors",
+  "total_images": 1703,
+  "successful": 1703,
+  "failed": 0,
+  "total_time_mins": 46.78,
+  "status": "completed",
+  "completed_at": "2026-06-01 01:43:56"
+}
