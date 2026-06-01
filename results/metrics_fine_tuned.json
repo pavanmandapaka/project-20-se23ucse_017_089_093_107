@@ -1,0 +1,21 @@
+{
+  "bleu_1": 0.182577,
+  "bleu_2": 0.088419,
+  "bleu_3": 0.044015,
+  "bleu_4": 0.022795,
+  "bleu_avg": 0.061127,
+  "rouge_1_p": 0.253448,
+  "rouge_1_r": 0.33809,
+  "rouge_1_f": 0.272628,
+  "rouge_2_p": 0.073749,
+  "rouge_2_r": 0.098543,
+  "rouge_2_f": 0.079267,
+  "rouge_l_p": 0.1851,
+  "rouge_l_r": 0.253961,
+  "rouge_l_f": 0.201331,
+  "model_version": "fine_tuned",
+  "n_samples": 1703,
+  "evaluated_at": "2026-06-01 19:33:30",
+  "checkpoint": "checkpoints/full_train/epoch_10/model.safetensors",
+  "note": "Preliminary fine-tuned scores \u2014 epoch 10"
+}
