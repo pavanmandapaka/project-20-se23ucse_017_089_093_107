@@ -108,4 +108,15 @@ def log_metric(
     conn.close()
 
 
+def update_inference_text(inference_id: int, generated_text: str) -> None:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE inferences SET generated_text = ? WHERE id = ?",
+        (generated_text, inference_id),
+    )
+    conn.commit()
+    conn.close()
+
+
 init_db()

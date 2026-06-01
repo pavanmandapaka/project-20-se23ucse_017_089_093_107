@@ -2,3 +2,5 @@ checkpoints/
 logs/
 data/uploads/
 data/evaluation_logs.db
+.env
+.env.*

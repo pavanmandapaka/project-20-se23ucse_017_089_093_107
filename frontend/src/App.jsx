@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import './App.css'
 
-const API_BASE = 'http://localhost:8000/api/v1'
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1'
 
 function formatBytes(bytes) {
   if (bytes < 1024) return bytes + ' B'
@@ -16,7 +16,51 @@ function App() {
   const [uploading, setUploading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const [prompt, setPrompt] = useState('')
+  const [modelVersion, setModelVersion] = useState('blip-image-captioning-base')
+  const [health, setHealth] = useState(null)
+  const [metrics, setMetrics] = useState(null)
+  const [datasets, setDatasets] = useState([])
+  const [trainingJobs, setTrainingJobs] = useState([])
+  const [history, setHistory] = useState([])
+  const [loadingDashboard, setLoadingDashboard] = useState(false)
   const inputRef = useRef(null)
+
+  const fetchJSON = useCallback(async (url, options) => {
+    const res = await fetch(url, options)
+    if (!res.ok) {
+      throw new Error(`Server responded with ${res.status}`)
+    }
+    return res.json()
+  }, [])
+
+  const loadDashboard = useCallback(async () => {
+    setLoadingDashboard(true)
+    setError(null)
+    try {
+      const [healthData, metricsData, datasetsData, jobsData, historyData] = await Promise.all([
+        fetchJSON(`${API_BASE.replace('/api/v1', '')}/health`),
+        fetchJSON(`${API_BASE}/metrics/summary`),
+        fetchJSON(`${API_BASE}/datasets`),
+        fetchJSON(`${API_BASE}/training/jobs`),
+        fetchJSON(`${API_BASE}/inference/history?limit=8`),
+      ])
+
+      setHealth(healthData)
+      setMetrics(metricsData)
+      setDatasets(datasetsData.datasets || [])
+      setTrainingJobs(jobsData.jobs || [])
+      setHistory(historyData.inferences || [])
+    } catch (err) {
+      setError(err.message || 'Failed to load dashboard data.')
+    } finally {
+      setLoadingDashboard(false)
+    }
+  }, [fetchJSON])
+
+  useEffect(() => {
+    loadDashboard()
+  }, [loadDashboard])
 
   const handleFile = useCallback((f) => {
     if (!f) return
@@ -79,24 +123,28 @@ function App() {
     try {
       const formData = new FormData()
       formData.append('file', file)
+      if (prompt.trim()) {
+        formData.append('prompt', prompt.trim())
+      }
+      formData.append('model_version', modelVersion)
 
-      const res = await fetch(`${API_BASE}/inference/run`, {
+      const data = await fetchJSON(`${API_BASE}/inference/run`, {
         method: 'POST',
         body: formData,
       })
 
-      if (!res.ok) {
-        throw new Error(`Server responded with ${res.status}`)
-      }
-
-      const data = await res.json()
       setResult(data)
+      if (data?.inference_id) {
+        const detail = await fetchJSON(`${API_BASE}/inference/${data.inference_id}`)
+        setResult((prev) => ({ ...prev, detail }))
+      }
+      loadDashboard()
     } catch (err) {
       setError(err.message || 'Upload failed. Make sure the server is running.')
     } finally {
       setUploading(false)
     }
-  }, [file])
+  }, [file, prompt, modelVersion, fetchJSON, loadDashboard])
 
   return (
     <div className="app">
@@ -117,6 +165,30 @@ function App() {
             <p className="upload-container__subtitle">
               Drag &amp; drop a medical image or click to browse. Supported formats: PNG, JPEG, WebP, TIFF, BMP.
             </p>
+          </div>
+
+          {/* Controls */}
+          <div className="controls">
+            <label className="controls__field">
+              <span className="controls__label">Model version</span>
+              <input
+                className="controls__input"
+                type="text"
+                value={modelVersion}
+                onChange={(e) => setModelVersion(e.target.value)}
+                placeholder="blip-image-captioning-base"
+              />
+            </label>
+            <label className="controls__field">
+              <span className="controls__label">Optional prompt</span>
+              <input
+                className="controls__input"
+                type="text"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="e.g., Describe findings succinctly"
+              />
+            </label>
           </div>
 
           {/* Drop Zone */}
@@ -210,9 +282,16 @@ function App() {
                 <span className="result__dot" />
                 <span className="result__label">Analysis Result</span>
               </div>
-              <p className="result__text">
-                {result.caption || result.prompt || JSON.stringify(result)}
-              </p>
+              <p className="result__text">{result.caption || result.prompt || 'Inference received.'}</p>
+              {result.inference_id && (
+                <div className="result__meta">
+                  <span>Inference ID: {result.inference_id}</span>
+                  <span>Model: {result.model_version}</span>
+                </div>
+              )}
+              {result.detail?.generated_text && (
+                <p className="result__text">{result.detail.generated_text}</p>
+              )}
             </div>
           )}
 
@@ -225,6 +304,62 @@ function App() {
               <p className="error-card__text">{error}</p>
             </div>
           )}
+          {/* Live Data */}
+          <section className="dashboard" id="dashboard">
+            <div className="dashboard__header">
+              <h3 className="dashboard__title">Live API Status</h3>
+              <button
+                className="dashboard__refresh"
+                onClick={loadDashboard}
+                disabled={loadingDashboard}
+              >
+                {loadingDashboard ? 'Refreshing…' : 'Refresh'}
+              </button>
+            </div>
+            <div className="dashboard__grid">
+              <div className="card">
+                <h4 className="card__title">Health</h4>
+                <p className="card__body">{health?.status || 'unknown'}</p>
+              </div>
+              <div className="card">
+                <h4 className="card__title">Metrics</h4>
+                <p className="card__body">
+                  {metrics?.status ? metrics.status : 'not available'}
+                </p>
+              </div>
+              <div className="card">
+                <h4 className="card__title">Datasets</h4>
+                <p className="card__body">
+                  {datasets.length ? `${datasets.length} available` : 'none found'}
+                </p>
+              </div>
+              <div className="card">
+                <h4 className="card__title">Training Jobs</h4>
+                <p className="card__body">
+                  {trainingJobs.length ? `${trainingJobs.length} active` : 'none queued'}
+                </p>
+              </div>
+            </div>
+
+            <div className="card card--full">
+              <h4 className="card__title">Recent Inferences</h4>
+              {history.length === 0 ? (
+                <p className="card__body">No history yet.</p>
+              ) : (
+                <ul className="history">
+                  {history.map((item) => (
+                    <li key={item.id} className="history__item">
+                      <div>
+                        <p className="history__title">#{item.id} · {item.model_version}</p>
+                        <p className="history__meta">{item.image_path}</p>
+                      </div>
+                      <span className="history__status">{item.generated_text}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </section>
         </div>
       </main>
 
