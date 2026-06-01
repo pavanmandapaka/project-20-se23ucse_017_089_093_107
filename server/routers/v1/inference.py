@@ -7,53 +7,59 @@ from uuid import uuid4
 import torch
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from PIL import Image
-from transformers import BlipForConditionalGeneration, BlipProcessor
+from safetensors.torch import load_file
+from transformers import BlipForConditionalGeneration, BlipProcessor, BlipConfig
 
 from server.db import get_inference, list_inferences, log_inference, update_inference_text
 
 router = APIRouter(prefix="/inference", tags=["inference"])
 
+BASE_DIR        = Path(__file__).resolve().parents[3]
+UPLOAD_DIR      = BASE_DIR / "data" / "uploads"
+CHECKPOINT_ROOT = BASE_DIR / "checkpoints" / "full_train"
+BASE_MODEL_ID   = "Salesforce/blip-image-captioning-base"
 
-BASE_DIR = Path(__file__).resolve().parents[3]
-UPLOAD_DIR = BASE_DIR / "data" / "uploads"
-CHECKPOINT_ROOT = BASE_DIR / "checkpoints" / "full_run"
 _MODEL_CACHE: dict[str, Tuple[BlipProcessor, BlipForConditionalGeneration, torch.device]] = {}
 _MODEL_LOCK = threading.Lock()
 
 
-def _resolve_model_path(model_version: str) -> str:
-    if model_version in {"blip-image-captioning-base", "Salesforce/blip-image-captioning-base"}:
-        return "Salesforce/blip-image-captioning-base"
-
-    if model_version.lower() in {"fine-tuned", "finetuned", "fine_tuned"}:
-        for ckpt in ["epoch_10", "epoch_09"]:
-            candidate = CHECKPOINT_ROOT / ckpt
-            if candidate.is_dir():
-                return str(candidate)
-
-    candidate = (BASE_DIR / model_version).resolve()
-    if candidate.is_dir():
-        return str(candidate)
-
-    return model_version
-
-
 def _load_model(model_version: str) -> Tuple[BlipProcessor, BlipForConditionalGeneration, torch.device]:
-    resolved = _resolve_model_path(model_version)
-    cache_key = f"{resolved}"
-
     with _MODEL_LOCK:
-        cached = _MODEL_CACHE.get(cache_key)
-        if cached:
-            return cached
+        if model_version in _MODEL_CACHE:
+            return _MODEL_CACHE[model_version]
 
-        processor = BlipProcessor.from_pretrained(resolved)
-        model = BlipForConditionalGeneration.from_pretrained(resolved)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model.to(device)
-        model.eval()
 
-        _MODEL_CACHE[cache_key] = (processor, model, device)
+        if model_version.lower() in {"fine-tuned", "finetuned", "fine_tuned"}:
+            # Find best checkpoint
+            ckpt_file = None
+            for ckpt in ["epoch_10", "epoch_09", "epoch_08"]:
+                candidate = CHECKPOINT_ROOT / ckpt / "model.safetensors"
+                if candidate.is_file():
+                    ckpt_file = candidate
+                    break
+
+            if ckpt_file is None:
+                raise RuntimeError(f"No checkpoint found in {CHECKPOINT_ROOT}")
+
+            print(f"[Genni] Loading fine-tuned model from {ckpt_file} ...")
+            processor = BlipProcessor.from_pretrained(BASE_MODEL_ID)
+            config    = BlipConfig.from_pretrained(BASE_MODEL_ID)
+            model     = BlipForConditionalGeneration(config)
+            state_dict = load_file(str(ckpt_file), device="cpu")
+            model.load_state_dict(state_dict, strict=False)
+            model.to(device)
+            model.eval()
+            print("[Genni] Fine-tuned model loaded OK")
+        else:
+            print(f"[Genni] Loading zero-shot model: {BASE_MODEL_ID} ...")
+            processor = BlipProcessor.from_pretrained(BASE_MODEL_ID)
+            model     = BlipForConditionalGeneration.from_pretrained(BASE_MODEL_ID)
+            model.to(device)
+            model.eval()
+            print("[Genni] Zero-shot model loaded OK")
+
+        _MODEL_CACHE[model_version] = (processor, model, device)
         return processor, model, device
 
 
@@ -73,11 +79,13 @@ def _generate_caption(
     with torch.no_grad():
         out = model.generate(
             **inputs,
-            max_new_tokens=100,
+            max_new_tokens=60,
             num_beams=4,
-            repetition_penalty=1.2,
-            no_repeat_ngram_size=3,
             early_stopping=True,
+            repetition_penalty=2.0,
+            no_repeat_ngram_size=4,
+            length_penalty=0.8,
+            min_length=10,
         )
     return processor.decode(out[0], skip_special_tokens=True).strip()
 
@@ -86,7 +94,7 @@ def _generate_caption(
 async def run_inference(
     file: UploadFile = File(...),
     prompt: Optional[str] = Form(None),
-    model_version: str = Form("blip-image-captioning-base"),
+    model_version: str = Form("fine_tuned"),
 ) -> dict:
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")

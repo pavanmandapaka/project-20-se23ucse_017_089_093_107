@@ -17,7 +17,7 @@ function App() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [prompt, setPrompt] = useState('')
-  const [modelVersion, setModelVersion] = useState('blip-image-captioning-base')
+  const [modelVersion, setModelVersion] = useState('fine_tuned')
   const [health, setHealth] = useState(null)
   const [metrics, setMetrics] = useState(null)
   const [datasets, setDatasets] = useState([])
