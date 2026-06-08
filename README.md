@@ -153,7 +153,7 @@ sbatch run_inference_finetuned_job.sh
 
 Results are saved to `results/fine_tuned_results.txt`.
 
-### Web Frontend (KollaGPT UI)
+### Web Frontend 
 
 **1. Configure environment variables**
 
